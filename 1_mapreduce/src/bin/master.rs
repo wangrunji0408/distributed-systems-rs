@@ -4,7 +4,7 @@ use async_std::{
 };
 use log::*;
 use mapreduce::*;
-use std::{future::Future, pin::Pin, sync::Arc};
+use std::{future::Future, pin::Pin};
 use tarpc::{
     context,
     server::{self, Handler},
@@ -33,6 +33,7 @@ impl Master for MasterServer {
     fn finish_task(self, _: context::Context, task: Task) -> Self::FinishTaskFut {
         Box::pin(async move {
             info!("finish task: {:?}", task);
+            self.finish_tasks_sender.send(task).await;
         })
     }
 }
@@ -48,8 +49,9 @@ struct MapReduceMaster {
 
 impl MapReduceMaster {
     fn new(input_files: Vec<String>, reduce_n: usize) -> Self {
-        let (sender1, receiver1) = channel(1);
-        let (sender2, receiver2) = channel(1);
+        // FIXME: fix block when buffer is small
+        let (sender1, receiver1) = channel(10);
+        let (sender2, receiver2) = channel(10);
         MapReduceMaster {
             input_files,
             reduce_n,
@@ -69,7 +71,7 @@ impl MapReduceMaster {
     }
 
     /// Run the MapReduce task.
-    async fn run(mut self) {
+    async fn run(self) {
         // map tasks
         for (id, path) in self.input_files.iter().enumerate() {
             let task = Task::Map {
@@ -79,7 +81,22 @@ impl MapReduceMaster {
             };
             self.pending_tasks_sender.send(task).await;
         }
-        self.finish_tasks_receiver.recv().await;
+        // wait for complete
+        for _ in self.input_files.iter() {
+            self.finish_tasks_receiver.recv().await;
+        }
+        // reduce tasks
+        for id in 0..self.reduce_n {
+            let task = Task::Reduce {
+                id,
+                map_n: self.input_files.len(),
+            };
+            self.pending_tasks_sender.send(task).await;
+        }
+        // wait for complete
+        for _ in 0..self.reduce_n {
+            self.finish_tasks_receiver.recv().await;
+        }
     }
 }
 
@@ -88,8 +105,9 @@ async fn main() -> std::io::Result<()> {
     env_logger::init();
 
     let inputs = std::env::args().skip(1).collect();
+    let reduce_n = 3;
 
-    let mut master = MapReduceMaster::new(inputs, 3);
+    let master = MapReduceMaster::new(inputs, reduce_n);
 
     let transport = tarpc::serde_transport::tcp::listen("localhost:8000", Json::default)
         .await?
