@@ -6,6 +6,8 @@ use tokio_serde::formats::Json;
 
 #[tokio::main]
 async fn main() -> io::Result<()> {
+    env_logger::init();
+
     let server_addr = "localhost:8000";
     let transport = tarpc::serde_transport::tcp::connect(server_addr, Json::default()).await?;
 
