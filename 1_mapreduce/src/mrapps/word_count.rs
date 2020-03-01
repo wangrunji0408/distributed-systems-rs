@@ -1,3 +1,4 @@
+#[no_mangle]
 pub fn map(content: &str) -> Vec<(String, String)> {
     content
         .split(|c: char| !c.is_ascii_alphabetic())
@@ -5,6 +6,7 @@ pub fn map(content: &str) -> Vec<(String, String)> {
         .collect()
 }
 
+#[no_mangle]
 pub fn reduce(_key: &str, values: Vec<String>) -> String {
     values.len().to_string()
 }

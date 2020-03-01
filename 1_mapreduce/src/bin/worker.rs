@@ -14,9 +14,6 @@ use tokio::fs::File;
 use tokio::prelude::*;
 use tokio_serde::formats::Json;
 
-#[path = "../mrapps/word_count.rs"]
-mod app;
-
 struct MapReduceWorker {
     client: MasterClient,
     context: Context,
@@ -115,9 +112,26 @@ async fn read_to_string(path: impl AsRef<Path>) -> std::io::Result<String> {
 type MapFn = fn(content: &str) -> Vec<(String, String)>;
 type ReduceFn = fn(key: &str, values: Vec<String>) -> String;
 
+/// Load map and reduce function from dylib.
+fn load_fn(path: &str) -> std::io::Result<(MapFn, ReduceFn)> {
+    let lib = libloading::Library::new(path)?;
+    unsafe {
+        let map_fn = lib.get::<MapFn>(b"map")?;
+        let reduce_fn = lib.get::<ReduceFn>(b"reduce")?;
+        // leak library and get raw functions
+        let map_fn: MapFn = core::mem::transmute(map_fn.into_raw().into_raw());
+        let reduce_fn: ReduceFn = core::mem::transmute(reduce_fn.into_raw().into_raw());
+        core::mem::forget(lib);
+        Ok((map_fn, reduce_fn))
+    }
+}
+
 #[tokio::main]
 async fn main() -> io::Result<()> {
     env_logger::init();
+
+    let app_path = std::env::args().nth(1).expect("no input: xxx.so");
+    let (map_fn, reduce_fn) = load_fn(&app_path)?;
 
     let tempdir = PathBuf::from("mr-temp");
     create_dir_all(&tempdir)?;
@@ -130,8 +144,8 @@ async fn main() -> io::Result<()> {
         client,
         context,
         tempdir,
-        map_fn: app::map,
-        reduce_fn: app::reduce,
+        map_fn,
+        reduce_fn,
     };
 
     // run
