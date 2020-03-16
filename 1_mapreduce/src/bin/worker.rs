@@ -123,7 +123,8 @@ async fn main() -> io::Result<()> {
     create_dir_all(&tempdir)?;
 
     // construct worker
-    let transport = tarpc::serde_transport::tcp::connect(DEFAULT_LISTENING_ADDRESS, Json::default()).await?;
+    let transport =
+        tarpc::serde_transport::tcp::connect(DEFAULT_LISTENING_ADDRESS, Json::default()).await?;
     let client = MasterClient::new(client::Config::default(), transport).spawn()?;
     let context = context::current();
     let mut worker = MapReduceWorker {
