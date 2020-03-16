@@ -62,7 +62,7 @@ impl MapReduceMaster {
         }
     }
 
-    /// Get RPC server
+    /// Get RPC server.
     fn server(&self) -> MasterServer {
         MasterServer {
             pending_tasks_receiver: self.pending_tasks_receiver.clone(),
@@ -109,7 +109,7 @@ async fn main() -> std::io::Result<()> {
 
     let master = MapReduceMaster::new(inputs, reduce_n);
 
-    let transport = tarpc::serde_transport::tcp::listen("localhost:8000", Json::default)
+    let transport = tarpc::serde_transport::tcp::listen(DEFAULT_LISTENING_ADDRESS, Json::default)
         .await?
         .filter_map(|r| r.ok());
     let server = server::new(server::Config::default())
