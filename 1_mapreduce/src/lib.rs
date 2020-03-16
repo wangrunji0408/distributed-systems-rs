@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+pub const DEFAULT_LISTENING_ADDRESS: &str = "localhost:8000";
+
 #[tarpc::service]
 pub trait Master {
     /// Get a task from master.

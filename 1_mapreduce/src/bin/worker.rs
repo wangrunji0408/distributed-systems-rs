@@ -1,5 +1,5 @@
 use log::*;
-use mapreduce::{MasterClient, Task};
+use mapreduce::{MasterClient, Task, DEFAULT_LISTENING_ADDRESS};
 use std::collections::hash_map::DefaultHasher;
 use std::collections::BTreeMap;
 use std::fs::create_dir_all;
@@ -123,7 +123,7 @@ async fn main() -> io::Result<()> {
     create_dir_all(&tempdir)?;
 
     // construct worker
-    let transport = tarpc::serde_transport::tcp::connect("localhost:8000", Json::default()).await?;
+    let transport = tarpc::serde_transport::tcp::connect(DEFAULT_LISTENING_ADDRESS, Json::default()).await?;
     let client = MasterClient::new(client::Config::default(), transport).spawn()?;
     let context = context::current();
     let mut worker = MapReduceWorker {
