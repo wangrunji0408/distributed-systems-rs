@@ -23,13 +23,8 @@ jobs:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        components: rustfmt, clippy
-    - name: MapReduce
-      run: |
-        cd 1_mapreduce
-        sh ./test.sh
+      - uses: actions/checkout@v2
+      - name: MapReduce
+        run: |
+          cd 1_mapreduce
+          sh ./test.sh
