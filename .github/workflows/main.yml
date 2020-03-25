@@ -3,18 +3,32 @@ name: CI
 on: [push, pull_request]
 
 jobs:
+  check:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          components: rustfmt, clippy
+      - name: Check code format and clippy
+        run: cd 1_mapreduce && cargo fmt -- --check && cargo clippy -- -D warnings
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-    - name: MapReduce
-      run: |
-        cd 1_mapreduce
-        sh ./test.sh
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+      - name: MapReduce
+        run: |
+          cd 1_mapreduce
+          sh ./test.sh
