@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "1_mapreduce",
+    "2_two-phase-commit",
+]

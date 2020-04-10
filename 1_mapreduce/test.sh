@@ -1,6 +1,10 @@
 export ARGS=--release
 export APP=word_count
 
+# clear
+mkdir -p target
+rm -rf mr-temp
+
 # build master & worker
 cargo build ${ARGS}
 
